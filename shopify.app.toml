@@ -30,22 +30,22 @@ api_version = "2024-10"
 
 [[webhooks.subscriptions]]
 topics = ["customers/data_request"]
-uri = "https://YOUR_WEBHOOK_URL/webhooks/customers/data_request"
+uri = "https://webhooks-blush.vercel.app/webhooks/customers/data_request"
 # Triggered when customer requests their data (GDPR compliance)
 
 [[webhooks.subscriptions]]
 topics = ["customers/redact"]
-uri = "https://YOUR_WEBHOOK_URL/webhooks/customers/redact"
+uri = "https://webhooks-blush.vercel.app/webhooks/customers/redact"
 # Triggered when customer requests data deletion (GDPR compliance)
 
 [[webhooks.subscriptions]]
 topics = ["shop/redact"]
-uri = "https://YOUR_WEBHOOK_URL/webhooks/shop/redact"
+uri = "https://webhooks-blush.vercel.app/webhooks/shop/redact"
 # Triggered 48 hours after merchant uninstalls app (GDPR compliance)
 
 [[webhooks.subscriptions]]
 topics = ["app/uninstalled"]
-uri = "https://YOUR_WEBHOOK_URL/webhooks/app/uninstalled"
+uri = "https://webhooks-blush.vercel.app/webhooks/app/uninstalled"
 # Optional: Triggered when app is uninstalled (for analytics/cleanup)
 
 [build]
