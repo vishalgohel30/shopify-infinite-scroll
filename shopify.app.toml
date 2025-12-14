@@ -1,0 +1,63 @@
+# Learn more at https://shopify.dev/docs/apps/tools/cli/configuration
+
+name = "Infinite Scroll Pro"
+client_id = ""  # Will be generated when you run 'shopify app dev'
+
+# App URLs - REPLACE THESE WITH YOUR ACTUAL URLs BEFORE PUBLISHING
+[app_proxy]
+# Optional: Only needed if you add server-side features later
+
+[application_url]
+# Required for App Store submission
+redirect_url_allowlist = []
+
+[pos]
+embedded = false
+
+[access_scopes]
+# Minimal scopes needed for theme extension
+# Only request scopes you actually use
+scopes = "write_themes"
+
+[auth]
+redirect_urls = []
+
+# GDPR Compliance Webhooks - REQUIRED FOR APP STORE
+# Deploy the webhooks server from /webhooks folder first
+# Then replace YOUR_WEBHOOK_URL with your actual deployed URL
+[webhooks]
+api_version = "2024-10"
+
+[[webhooks.subscriptions]]
+topics = ["customers/data_request"]
+uri = "https://YOUR_WEBHOOK_URL/webhooks/customers/data_request"
+# Triggered when customer requests their data (GDPR compliance)
+
+[[webhooks.subscriptions]]
+topics = ["customers/redact"]
+uri = "https://YOUR_WEBHOOK_URL/webhooks/customers/redact"
+# Triggered when customer requests data deletion (GDPR compliance)
+
+[[webhooks.subscriptions]]
+topics = ["shop/redact"]
+uri = "https://YOUR_WEBHOOK_URL/webhooks/shop/redact"
+# Triggered 48 hours after merchant uninstalls app (GDPR compliance)
+
+[[webhooks.subscriptions]]
+topics = ["app/uninstalled"]
+uri = "https://YOUR_WEBHOOK_URL/webhooks/app/uninstalled"
+# Optional: Triggered when app is uninstalled (for analytics/cleanup)
+
+[build]
+automatically_update_urls_on_dev = true
+dev_store_url = "vishal-test-store-2.myshopify.com"
+include_config_on_deploy = true
+
+# IMPORTANT: Before publishing to Shopify App Store:
+# 1. Deploy the webhooks server (see /webhooks/README.md)
+# 2. Replace YOUR_WEBHOOK_URL with your deployed webhook URL
+# 3. Add your privacy policy URL (host PRIVACY_POLICY.md somewhere)
+# 4. Update package.json with author and support information
+# 5. Create app icons (1200x1200px and 512x512px PNG files)
+# 6. Take screenshots of the app in action
+# 7. Test on multiple Shopify themes to verify compatibility

@@ -1,0 +1,302 @@
+/**
+ * Shopify Infinite Scroll
+ * Automatically loads more products as users scroll through collection pages
+ */
+
+class InfiniteScroll {
+  constructor() {
+    this.container = document.querySelector('[data-infinite-scroll-container]');
+    this.loadMoreBtn = document.querySelector('[data-load-more]');
+    this.loader = document.querySelector('[data-infinite-scroll-loader]');
+    this.sentinel = document.querySelector('[data-infinite-scroll-sentinel]');
+    this.endMessage = document.querySelector('[data-infinite-scroll-end]');
+
+    this.currentPage = 1;
+    this.loading = false;
+    this.hasMorePages = true;
+    this.nextPageUrl = this.getInitialNextPageUrl();
+
+    if (!this.container) {
+      console.warn('Infinite Scroll: Container not found');
+      return;
+    }
+
+    this.init();
+  }
+
+  init() {
+    console.log('Infinite Scroll initialized');
+
+    // Clean up any duplicates on page load
+    this.removeDuplicateElements();
+
+    // Check if auto-scroll is enabled
+    const autoScrollEnabled = this.container.dataset.autoScroll !== 'false';
+
+    // Check if URL updates are enabled
+    this.updateUrlEnabled = this.container.dataset.updateUrl === 'true';
+
+    if (autoScrollEnabled && this.sentinel) {
+      this.setupIntersectionObserver();
+    }
+
+    if (this.loadMoreBtn) {
+      this.setupLoadMoreButton();
+    }
+  }
+
+  getInitialNextPageUrl() {
+    const nextPageLink = document.querySelector('[data-next-page]');
+    return nextPageLink ? nextPageLink.getAttribute('href') : null;
+  }
+
+  setupIntersectionObserver() {
+    // Adaptive rootMargin based on device and connection
+    let rootMargin = '300px';
+
+    // Increase lookahead for fast connections
+    if ('connection' in navigator && navigator.connection.effectiveType === '4g') {
+      rootMargin = '500px';
+    }
+    // Reduce for slow connections to save bandwidth
+    else if ('connection' in navigator && (navigator.connection.effectiveType === '2g' || navigator.connection.effectiveType === 'slow-2g')) {
+      rootMargin = '150px';
+    }
+    // Increase for desktop (more viewport height)
+    else if (window.innerWidth > 1024) {
+      rootMargin = '400px';
+    }
+
+    const options = {
+      root: null,
+      rootMargin: rootMargin,
+      threshold: 0.1
+    };
+
+    this.observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting && !this.loading && this.hasMorePages) {
+          this.loadMore(true); // true = auto-scroll
+        }
+      });
+    }, options);
+
+    this.observer.observe(this.sentinel);
+    console.log('Infinite Scroll: Using rootMargin:', rootMargin);
+  }
+
+  setupLoadMoreButton() {
+    this.loadMoreBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      if (!this.loading && this.hasMorePages) {
+        this.loadMore(false); // false = button click
+      }
+    });
+  }
+
+  async loadMore(isAutoScroll = false) {
+    if (this.loading || !this.hasMorePages || !this.nextPageUrl) {
+      return;
+    }
+
+    this.loading = true;
+    this.showLoader(isAutoScroll);
+
+    try {
+      const response = await fetch(this.nextPageUrl);
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const html = await response.text();
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(html, 'text/html');
+
+      // Extract new products
+      const newProducts = doc.querySelectorAll('[data-product-item]');
+
+      if (newProducts.length === 0) {
+        this.hasMorePages = false;
+        this.hideLoadMore();
+        console.log('No more products to load');
+      } else {
+        // Append new products to container
+        const fragment = document.createDocumentFragment();
+        newProducts.forEach(product => {
+          const clonedProduct = product.cloneNode(true);
+          fragment.appendChild(clonedProduct);
+        });
+        this.container.appendChild(fragment);
+
+        // Remove any duplicate elements that might have been loaded
+        const buttonContainers = document.querySelectorAll('[data-load-more-container]');
+        if (buttonContainers.length > 1) {
+          for (let i = 1; i < buttonContainers.length; i++) {
+            buttonContainers[i].remove();
+          }
+        }
+
+        const loaderContainers = document.querySelectorAll('[data-loader-container]');
+        if (loaderContainers.length > 1) {
+          for (let i = 1; i < loaderContainers.length; i++) {
+            loaderContainers[i].remove();
+          }
+        }
+
+        const sentinels = document.querySelectorAll('[data-infinite-scroll-sentinel]');
+        if (sentinels.length > 1) {
+          for (let i = 1; i < sentinels.length; i++) {
+            sentinels[i].remove();
+          }
+        }
+
+        const endMessages = document.querySelectorAll('[data-infinite-scroll-end]');
+        if (endMessages.length > 1) {
+          for (let i = 1; i < endMessages.length; i++) {
+            endMessages[i].remove();
+          }
+        }
+
+        this.currentPage++;
+
+        // Update URL in browser without reload
+        this.updateUrl(this.nextPageUrl);
+
+        // Check for next page
+        const nextPageLink = doc.querySelector('[data-next-page]');
+        if (nextPageLink) {
+          this.nextPageUrl = nextPageLink.getAttribute('href');
+        } else {
+          this.hasMorePages = false;
+          this.hideLoadMore();
+        }
+
+        // Trigger custom event for analytics or other integrations
+        this.triggerLoadEvent(newProducts.length);
+      }
+
+    } catch (error) {
+      console.error('Error loading more products:', error);
+      this.showError();
+    } finally {
+      this.loading = false;
+      this.hideLoader();
+
+      // Final cleanup: ensure no duplicates exist
+      this.removeDuplicateElements();
+    }
+  }
+
+  removeDuplicateElements() {
+    // Remove duplicate loaders
+    const loaders = document.querySelectorAll('[data-loader-container]');
+    for (let i = 1; i < loaders.length; i++) {
+      loaders[i].remove();
+    }
+
+    // Remove duplicate buttons
+    const buttons = document.querySelectorAll('[data-load-more-container]');
+    for (let i = 1; i < buttons.length; i++) {
+      buttons[i].remove();
+    }
+
+    // Remove duplicate sentinels
+    const sentinels = document.querySelectorAll('[data-infinite-scroll-sentinel]');
+    for (let i = 1; i < sentinels.length; i++) {
+      sentinels[i].remove();
+    }
+
+    // Remove duplicate end messages
+    const endMessages = document.querySelectorAll('[data-infinite-scroll-end]');
+    for (let i = 1; i < endMessages.length; i++) {
+      endMessages[i].remove();
+    }
+  }
+
+  showLoader(isAutoScroll = false) {
+    // Only show the spinner/loader for auto-scroll
+    if (isAutoScroll && this.loader) {
+      this.loader.classList.add('is-loading');
+      this.loader.setAttribute('aria-busy', 'true');
+    }
+    // Always update button state if it exists
+    if (this.loadMoreBtn) {
+      this.loadMoreBtn.disabled = true;
+      this.loadMoreBtn.classList.add('is-loading');
+      this.loadMoreBtn.textContent = this.loadMoreBtn.dataset.loadingText || 'Loading...';
+    }
+  }
+
+  hideLoader() {
+    if (this.loader) {
+      this.loader.classList.remove('is-loading');
+      this.loader.setAttribute('aria-busy', 'false');
+    }
+    if (this.loadMoreBtn) {
+      this.loadMoreBtn.disabled = false;
+      this.loadMoreBtn.classList.remove('is-loading');
+      this.loadMoreBtn.textContent = this.loadMoreBtn.dataset.defaultText || 'Load More';
+    }
+  }
+
+  hideLoadMore() {
+    if (this.loadMoreBtn) {
+      this.loadMoreBtn.style.display = 'none';
+    }
+    if (this.sentinel && this.observer) {
+      this.observer.unobserve(this.sentinel);
+      this.sentinel.style.display = 'none';
+    }
+    // Show end message when no more pages
+    if (this.endMessage) {
+      this.endMessage.style.display = 'block';
+    }
+  }
+
+  updateUrl(url) {
+    // Only update URL if enabled in settings
+    if (this.updateUrlEnabled && window.history && window.history.pushState) {
+      window.history.pushState({ page: this.currentPage }, '', url);
+    }
+  }
+
+  showError() {
+    if (this.loadMoreBtn) {
+      this.loadMoreBtn.textContent = 'Error loading products. Try again.';
+      setTimeout(() => {
+        this.loadMoreBtn.textContent = this.loadMoreBtn.dataset.defaultText || 'Load More';
+      }, 3000);
+    }
+  }
+
+  triggerLoadEvent(productsCount) {
+    const event = new CustomEvent('infinitescroll:loaded', {
+      detail: {
+        page: this.currentPage,
+        productsLoaded: productsCount
+      }
+    });
+    document.dispatchEvent(event);
+  }
+}
+
+// Initialize when DOM is ready
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => {
+    new InfiniteScroll();
+  });
+} else {
+  new InfiniteScroll();
+}
+
+// Handle back/forward browser navigation (only if URL updates are enabled)
+window.addEventListener('popstate', (event) => {
+  const container = document.querySelector('[data-infinite-scroll-container]');
+  const updateUrlEnabled = container?.dataset.updateUrl === 'true';
+
+  if (updateUrlEnabled && event.state && event.state.page) {
+    // Reload page to show correct products for the URL
+    window.location.reload();
+  }
+});

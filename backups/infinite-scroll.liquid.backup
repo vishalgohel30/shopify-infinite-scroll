@@ -1,0 +1,472 @@
+{% comment %}
+  Infinite Scroll Block for Shopify Collection Pages
+  Automatically loads more products as customers scroll
+  Optimized for SEO & Performance
+{% endcomment %}
+
+{%- comment -%} Resource Hints for Performance {%- endcomment -%}
+<link rel="dns-prefetch" href="https://cdn.shopify.com">
+<link rel="preconnect" href="https://cdn.shopify.com" crossorigin>
+
+{%- comment -%} SEO: Canonical URL {%- endcomment -%}
+{%- if paginate.current_page == 1 -%}
+  <link rel="canonical" href="{{ collection.url }}">
+{%- else -%}
+  <link rel="canonical" href="{{ collection.url }}?page={{ paginate.current_page }}">
+{%- endif -%}
+
+{%- comment -%} SEO: Pagination Headers (prev/next) {%- endcomment -%}
+{%- if paginate.previous -%}
+  <link rel="prev" href="{{ paginate.previous.url }}">
+{%- endif -%}
+{%- if paginate.next -%}
+  <link rel="next" href="{{ paginate.next.url }}">
+{%- endif -%}
+
+{{ 'infinite-scroll.css' | asset_url | stylesheet_tag }}
+
+<div class="infinite-scroll-wrapper" id="infinite-scroll-{{ section.id }}">
+  <div
+    class="infinite-scroll-products"
+    data-infinite-scroll-container
+    data-auto-scroll="{% if block.settings.show_load_more %}false{% else %}{{ block.settings.enable_auto_scroll }}{% endif %}"
+    data-update-url="{{ block.settings.update_url }}"
+  >
+    {% paginate collection.products by block.settings.products_per_page %}
+      {% for product in collection.products %}
+        <div class="infinite-scroll-product" data-product-item>
+          <div class="product-card">
+            <a href="{{ product.url }}" class="product-card-link">
+              {% comment %} Product Image - Optimized with WebP + srcset {% endcomment %}
+              <div class="product-card-image">
+                {% if product.featured_image %}
+                  <picture>
+                    {%- comment -%} WebP sources for modern browsers {%- endcomment -%}
+                    <source
+                      type="image/webp"
+                      srcset="{{ product.featured_image | image_url: width: 300, format: 'pjpg' }} 300w,
+                              {{ product.featured_image | image_url: width: 600, format: 'pjpg' }} 600w,
+                              {{ product.featured_image | image_url: width: 900, format: 'pjpg' }} 900w"
+                      sizes="(max-width: 480px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                    >
+                    {%- comment -%} Fallback for older browsers {%- endcomment -%}
+                    <img
+                      src="{{ product.featured_image | image_url: width: 600 }}"
+                      srcset="{{ product.featured_image | image_url: width: 300 }} 300w,
+                              {{ product.featured_image | image_url: width: 600 }} 600w,
+                              {{ product.featured_image | image_url: width: 900 }} 900w"
+                      sizes="(max-width: 480px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                      alt="{{ product.featured_image.alt | default: product.title | escape }}"
+                      loading="lazy"
+                      decoding="async"
+                      width="600"
+                      height="{{ 600 | divided_by: product.featured_image.aspect_ratio | ceil }}"
+                    >
+                  </picture>
+                {% else %}
+                  <div class="product-card-image-placeholder">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                      <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                      <polyline points="21 15 16 10 5 21"></polyline>
+                    </svg>
+                  </div>
+                {% endif %}
+              </div>
+
+              {% comment %} Product Info {% endcomment %}
+              <div class="product-card-info">
+                {% comment %} Product Vendor {% endcomment %}
+                {% if block.settings.show_vendor and product.vendor != blank %}
+                  <p class="product-card-vendor">{{ product.vendor }}</p>
+                {% endif %}
+
+                {% comment %} Product Title {% endcomment %}
+                <h3 class="product-card-title">{{ product.title }}</h3>
+
+                {% comment %} Product Price {% endcomment %}
+                <div class="product-card-price">
+                  {% if product.compare_at_price > product.price %}
+                    <span class="product-price-compare">
+                      {{ product.compare_at_price | money }}
+                    </span>
+                    <span class="product-price-sale">
+                      {{ product.price | money }}
+                    </span>
+                    {% if block.settings.show_sale_badge %}
+                      <span class="product-badge-sale">Sale</span>
+                    {% endif %}
+                  {% else %}
+                    <span class="product-price">
+                      {{ product.price | money }}
+                    </span>
+                  {% endif %}
+                </div>
+
+                {% comment %} Product Rating (if available) {% endcomment %}
+                {% if block.settings.show_rating and product.metafields.reviews.rating.value != blank %}
+                  <div class="product-card-rating">
+                    <span class="rating-stars">
+                      {% assign rating_value = product.metafields.reviews.rating.value | round: 1 %}
+                      {{ rating_value }} ★
+                    </span>
+                    {% if product.metafields.reviews.rating_count %}
+                      <span class="rating-count">({{ product.metafields.reviews.rating_count }})</span>
+                    {% endif %}
+                  </div>
+                {% endif %}
+              </div>
+            </a>
+
+            {%- comment -%} SEO: Structured Data (JSON-LD) for Product {%- endcomment -%}
+            <script type="application/ld+json">
+            {
+              "@context": "https://schema.org/",
+              "@type": "Product",
+              "name": {{ product.title | json }},
+              "image": "{{ product.featured_image | image_url: width: 600 }}",
+              "description": {{ product.description | strip_html | truncate: 200 | json }},
+              "url": "{{ shop.url }}{{ product.url }}",
+              "sku": {{ product.selected_or_first_available_variant.sku | json }},
+              "brand": {
+                "@type": "Brand",
+                "name": {{ product.vendor | json }}
+              },
+              "offers": {
+                "@type": "Offer",
+                "url": "{{ shop.url }}{{ product.url }}",
+                "priceCurrency": "{{ cart.currency.iso_code }}",
+                "price": "{{ product.price | divided_by: 100.0 }}",
+                "availability": "{% if product.available %}https://schema.org/InStock{% else %}https://schema.org/OutOfStock{% endif %}",
+                "itemCondition": "https://schema.org/NewCondition"
+                {%- if product.compare_at_price > product.price -%}
+                ,"priceValidUntil": "{{ 'now' | date: '%s' | plus: 2592000 | date: '%Y-%m-%d' }}"
+                {%- endif -%}
+              }
+            }
+            </script>
+          </div>
+        </div>
+      {% endfor %}
+
+      {% comment %} Next Page URL for Pagination {% endcomment %}
+      {% if paginate.next %}
+        <a href="{{ paginate.next.url }}" data-next-page style="display: none;" aria-hidden="true">
+          Next Page
+        </a>
+      {% endif %}
+
+      {% comment %} Store pagination state for button {% endcomment %}
+      {% assign has_next_page = false %}
+      {% if paginate.next %}
+        {% assign has_next_page = true %}
+      {% endif %}
+
+    {% endpaginate %}
+  </div>
+
+  {% comment %} Loading Indicator {% endcomment %}
+  <div
+    class="infinite-scroll-loader"
+    data-infinite-scroll-loader
+    data-loader-container
+    role="status"
+    aria-busy="false"
+    aria-live="polite"
+  >
+    <div class="infinite-scroll-loader-content">
+      {% if block.settings.loader_style == 'spinner' %}
+        <div class="infinite-scroll-spinner"></div>
+      {% elsif block.settings.loader_style == 'dots' %}
+        <div class="infinite-scroll-spinner-dots">
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
+      {% else %}
+        <div class="infinite-scroll-spinner"></div>
+      {% endif %}
+      <p class="infinite-scroll-loader-text">{{ block.settings.display_text | default: "Load More" }}</p>
+    </div>
+    <span class="sr-only">Loading more products...</span>
+  </div>
+
+  {% comment %} Load More Button {% endcomment %}
+  {% if block.settings.show_load_more %}
+    <div class="load-more-container" data-load-more-container>
+      {% if has_next_page %}
+        <button
+          class="load-more-button"
+          data-load-more
+          data-default-text="{{ block.settings.display_text }}"
+          data-loading-text="{{ block.settings.display_text }}"
+          type="button"
+        >
+          {{ block.settings.display_text }}
+        </button>
+      {% endif %}
+    </div>
+  {% endif %}
+
+  {% comment %} Sentinel element for Intersection Observer {% endcomment %}
+  <div class="infinite-scroll-sentinel" data-infinite-scroll-sentinel aria-hidden="true"></div>
+
+  {% comment %} End of products message {% endcomment %}
+  {% if block.settings.show_end_message %}
+    <div class="infinite-scroll-end" style="display: none;" data-infinite-scroll-end>
+      {{ block.settings.end_message }}
+    </div>
+  {% endif %}
+</div>
+
+<script src="{{ 'infinite-scroll.js' | asset_url }}" defer></script>
+
+<style>
+  /* Product Card Styles (scoped to this block) */
+  #infinite-scroll-{{ section.id }} .product-card {
+    display: block;
+    height: 100%;
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    overflow: hidden;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+  }
+
+  #infinite-scroll-{{ section.id }} .product-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+  }
+
+  #infinite-scroll-{{ section.id }} .product-card-link {
+    display: block;
+    text-decoration: none;
+    color: inherit;
+  }
+
+  #infinite-scroll-{{ section.id }} .product-card-image {
+    position: relative;
+    width: 100%;
+    padding-top: 100%;
+    overflow: hidden;
+    background: #f5f5f5;
+  }
+
+  #infinite-scroll-{{ section.id }} .product-card-image img {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  #infinite-scroll-{{ section.id }} .product-card-image-placeholder {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #ccc;
+  }
+
+  #infinite-scroll-{{ section.id }} .product-card-image-placeholder svg {
+    width: 64px;
+    height: 64px;
+  }
+
+  #infinite-scroll-{{ section.id }} .product-card-info {
+    padding: 16px;
+  }
+
+  #infinite-scroll-{{ section.id }} .product-card-vendor {
+    font-size: 12px;
+    color: #666;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin: 0 0 8px 0;
+  }
+
+  #infinite-scroll-{{ section.id }} .product-card-title {
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 1.4;
+    margin: 0 0 12px 0;
+    color: #000;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+  }
+
+  #infinite-scroll-{{ section.id }} .product-card-price {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  #infinite-scroll-{{ section.id }} .product-price {
+    font-size: 18px;
+    font-weight: 700;
+    color: #000;
+  }
+
+  #infinite-scroll-{{ section.id }} .product-price-compare {
+    font-size: 16px;
+    color: #999;
+    text-decoration: line-through;
+  }
+
+  #infinite-scroll-{{ section.id }} .product-price-sale {
+    font-size: 18px;
+    font-weight: 700;
+    color: #d32f2f;
+  }
+
+  #infinite-scroll-{{ section.id }} .product-badge-sale {
+    display: inline-block;
+    padding: 2px 8px;
+    background: #d32f2f;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 600;
+    border-radius: 4px;
+    text-transform: uppercase;
+  }
+
+  #infinite-scroll-{{ section.id }} .product-card-rating {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 8px;
+    font-size: 14px;
+  }
+
+  #infinite-scroll-{{ section.id }} .rating-stars {
+    color: #ffa000;
+  }
+
+  #infinite-scroll-{{ section.id }} .rating-count {
+    color: #666;
+  }
+</style>
+
+{% schema %}
+{
+  "name": "Infinite Scroll",
+  "target": "section",
+  "class": "infinite-scroll-section",
+  "settings": [
+    {
+      "type": "header",
+      "content": "Scroll Settings"
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_auto_scroll",
+      "label": "Enable Auto Scroll",
+      "default": true,
+      "info": "Automatically load more products when scrolling near the bottom"
+    },
+    {
+      "type": "range",
+      "id": "products_per_page",
+      "label": "Products Per Page",
+      "min": 12,
+      "max": 48,
+      "step": 6,
+      "default": 24,
+      "info": "Number of products to load at once"
+    },
+    {
+      "type": "checkbox",
+      "id": "update_url",
+      "label": "Update URL When Scrolling",
+      "default": false,
+      "info": "Show page numbers in URL (e.g., /collections/all?page=2). Useful for SEO and bookmarking, but changes the URL as you scroll."
+    },
+    {
+      "type": "header",
+      "content": "Product Display"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_vendor",
+      "label": "Show Vendor",
+      "default": false
+    },
+    {
+      "type": "checkbox",
+      "id": "show_rating",
+      "label": "Show Product Rating",
+      "default": false,
+      "info": "Requires product reviews metafields"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_sale_badge",
+      "label": "Show Sale Badge",
+      "default": true
+    },
+    {
+      "type": "header",
+      "content": "Loading Indicator"
+    },
+    {
+      "type": "select",
+      "id": "loader_style",
+      "label": "Loader Style",
+      "options": [
+        {
+          "value": "spinner",
+          "label": "Spinner"
+        },
+        {
+          "value": "dots",
+          "label": "Dots"
+        }
+      ],
+      "default": "spinner"
+    },
+    {
+      "type": "header",
+      "content": "Loading Settings"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_load_more",
+      "label": "Enable Load More Button",
+      "default": false,
+      "info": "ON = Manual button | OFF = Auto-scroll"
+    },
+    {
+      "type": "text",
+      "id": "display_text",
+      "label": "Display Text",
+      "default": "Load More",
+      "info": "Used for button text (if enabled) or loading text (if auto-scroll)"
+    },
+    {
+      "type": "header",
+      "content": "End Message"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_end_message",
+      "label": "Show End Message",
+      "default": false
+    },
+    {
+      "type": "text",
+      "id": "end_message",
+      "label": "End Message",
+      "default": "You've reached the end of the collection"
+    }
+  ]
+}
+{% endschema %}

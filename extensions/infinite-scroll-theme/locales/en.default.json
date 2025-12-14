@@ -1,0 +1,19 @@
+{
+  "infinite_scroll": {
+    "button": {
+      "load_more": "Load More Products",
+      "loading": "Loading...",
+      "error": "Error loading products"
+    },
+    "messages": {
+      "loading": "Loading more products...",
+      "no_more_products": "You've reached the end of the collection",
+      "error": "Unable to load more products. Please try again."
+    },
+    "accessibility": {
+      "loading": "Loading more products",
+      "loaded": "More products loaded",
+      "next_page": "Next page"
+    }
+  }
+}

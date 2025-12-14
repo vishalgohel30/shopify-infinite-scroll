@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run dev:*)",
+      "Bash(timeout /t 5)",
+      "Bash(timeout /t 8)",
+      "Bash(npx shopify app dev --help:*)",
+      "Bash(taskkill:*)",
+      "Bash(npx shopify auth:*)",
+      "WebFetch(domain:vishal-test-store-2.myshopify.com)",
+      "Bash(tasklist:*)",
+      "Bash(findstr:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

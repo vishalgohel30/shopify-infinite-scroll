@@ -1,0 +1,146 @@
+{% comment %}
+  Infinite Scroll - Theme Integration Block
+
+  This block enhances your existing theme's product grid with infinite scroll.
+  It works WITH your theme, not replacing it.
+
+  Installation:
+  1. Add this block to your collection template
+  2. Configure settings below
+  3. The script will automatically find and enhance your theme's product grid
+{% endcomment %}
+
+{%- comment -%} Pass settings to JavaScript {%- endcomment -%}
+{%- liquid
+  assign settings_json = '{'
+  assign settings_json = settings_json | append: '"autoScroll":' | append: block.settings.enable_auto_scroll | append: ','
+  assign settings_json = settings_json | append: '"showLoadMore":' | append: block.settings.show_load_more | append: ','
+  assign settings_json = settings_json | append: '"updateUrl":' | append: block.settings.update_url | append: ','
+  assign settings_json = settings_json | append: '"showEndMessage":' | append: block.settings.show_end_message | append: ','
+  assign settings_json = settings_json | append: '"loadMoreText":"' | append: block.settings.load_more_text | append: '",'
+  assign settings_json = settings_json | append: '"endMessage":"' | append: block.settings.end_message | append: '"'
+  assign settings_json = settings_json | append: '}'
+-%}
+
+<div
+  data-infinite-scroll-settings="{{ settings_json | escape }}"
+  style="display: none;"
+  aria-hidden="true"
+></div>
+
+{%- comment -%} Preconnect to Shopify CDN for faster asset loading {%- endcomment -%}
+<link rel="preconnect" href="https://cdn.shopify.com" crossorigin>
+<link rel="dns-prefetch" href="https://cdn.shopify.com">
+
+{%- comment -%} Load the JavaScript {%- endcomment -%}
+<script src="{{ 'infinite-scroll.js' | asset_url }}" defer></script>
+
+{%- comment -%} Optional: Custom styling for colors {%- endcomment -%}
+{% if block.settings.custom_styling %}
+<style>
+  .infinite-scroll-controls {
+    margin: 40px auto;
+    text-align: center;
+  }
+
+  .infinite-scroll-load-more {
+    background: {{ block.settings.button_color }} !important;
+    color: {{ block.settings.button_text_color }} !important;
+    border-color: {{ block.settings.button_color }} !important;
+  }
+
+  .infinite-scroll-load-more:hover {
+    opacity: 0.8;
+  }
+
+  .infinite-scroll-loader .spinner {
+    border-left-color: {{ block.settings.loader_color }} !important;
+  }
+</style>
+{% endif %}
+
+{% schema %}
+{
+  "name": "Infinite Scroll",
+  "target": "section",
+  "settings": [
+    {
+      "type": "paragraph",
+      "content": "Automatically finds your theme's product grid and adds infinite scroll. Works with filters and sorting."
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_auto_scroll",
+      "label": "Enable Auto Scroll",
+      "default": true,
+      "info": "Automatically load products when scrolling to bottom"
+    },
+    {
+      "type": "checkbox",
+      "id": "update_url",
+      "label": "Update URL",
+      "default": false,
+      "info": "Add ?page=2 to URL for SEO"
+    },
+    {
+      "type": "header",
+      "content": "Loading Settings"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_load_more",
+      "label": "Show Load More Button",
+      "default": false,
+      "info": "Manual button instead of auto-scroll"
+    },
+    {
+      "type": "text",
+      "id": "load_more_text",
+      "label": "Load More Button Text",
+      "default": "Load More Products",
+      "info": "Button text (will show 'Loading...' automatically when loading)"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_end_message",
+      "label": "Show End Message",
+      "default": true,
+      "info": "Display when all products loaded"
+    },
+    {
+      "type": "text",
+      "id": "end_message",
+      "label": "End Message",
+      "default": "You've viewed all products"
+    },
+    {
+      "type": "header",
+      "content": "Custom Styling"
+    },
+    {
+      "type": "checkbox",
+      "id": "custom_styling",
+      "label": "Enable Custom Colors",
+      "default": false
+    },
+    {
+      "type": "color",
+      "id": "button_color",
+      "label": "Button Color",
+      "default": "#000000"
+    },
+    {
+      "type": "color",
+      "id": "button_text_color",
+      "label": "Button Text Color",
+      "default": "#ffffff"
+    },
+    {
+      "type": "color",
+      "id": "loader_color",
+      "label": "Loader Color",
+      "default": "#000000"
+    }
+  ]
+}
+{% endschema %}

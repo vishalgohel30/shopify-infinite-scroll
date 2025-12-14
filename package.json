@@ -1,0 +1,51 @@
+{
+  "name": "shopify-infinite-scroll",
+  "version": "1.0.0",
+  "description": "Infinite scroll app for Shopify collection pages - automatically load products as customers scroll",
+  "scripts": {
+    "dev": "shopify app dev",
+    "deploy": "shopify app deploy",
+    "info": "shopify app info",
+    "generate": "shopify app generate",
+    "webhooks:install": "cd webhooks && npm install",
+    "webhooks:dev": "cd webhooks && npm run dev",
+    "webhooks:start": "cd webhooks && npm start"
+  },
+  "keywords": [
+    "shopify",
+    "shopify-app",
+    "infinite-scroll",
+    "theme-extension",
+    "collections",
+    "pagination",
+    "auto-load",
+    "lazy-load",
+    "product-grid",
+    "ajax-pagination",
+    "scroll-load"
+  ],
+  "author": {
+    "name": "Vishal Gohel",
+    "email": "vishalgohel221296@gmail.com",
+    "url": "https://github.com/vishalgohel30"
+  },
+  "homepage": "https://github.com/vishalgohel30/shopify-infinite-scroll",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/vishalgohel30/shopify-infinite-scroll"
+  },
+  "bugs": {
+    "url": "https://github.com/vishalgohel30/shopify-infinite-scroll/issues",
+    "email": "vishalgohel221296@gmail.com"
+  },
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  },
+  "devDependencies": {
+    "@shopify/app": "latest",
+    "@shopify/cli": "latest"
+  },
+  "private": false
+}
